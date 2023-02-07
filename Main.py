@@ -216,3 +216,109 @@ class DFA:
                 and (len(subtract_L2L1_final_states) != 0)):
             print('L1 and L2 are the Seperated')
  
+
+    def minimizing(self):
+        #مرحله اول : جدول
+        pairs = []# لیست شامل تمام ترکیب استیت های ممکن
+        for i in self.states:
+            for j in self.states:
+                if ((i != j) and not (j + i in pairs)):
+                    pairs.append(i + j)
+        marked_pairs = []#استیت های علامت گذاری شده
+        step = 1
+        while (True):
+            end = 0# متغیر اند برای اینست که زمان متوقف شدن حلقه را بفهمیم
+            #زمانی حلقه متوقف میشود که در یک گام کامل ما هیچ استیتی را علامت گذاری نکنیم
+            # گام اول
+            # در صورتی استیت ها را علامت گذاری کن که یکی پذیرش  و دیگری نباشد
+            if (step == 1):
+                for pair in pairs:
+                    current_state_1 = pair[0]
+                    current_state_2 = pair[1]
+                    if ((current_state_1 in self.final_states
+                         and current_state_2 not in self.final_states)
+                            or (current_state_1 not in self.final_states
+                                and current_state_2 in self.final_states)):
+                        marked_pairs.append(pair)
+                        end += 1
+                step += 1# بعد از پایان گام اول مقدار استپ را یک عدد زیاد کنیم که در مرحله بعدی وایل به استپ دو بریم
+
+            else:
+                for pair in pairs:
+                    if (pair not in marked_pairs):# استیت هایی را انتخاب کن که علامت گذاری نشده اند
+                        current_state_1 = pair[0]
+                        current_state_2 = pair[1]
+                        for symbols in self.alphabet:# در این حلقه به ازای هر حرف الفبا چک میکنیم که آیا به استیت های علامتگذاری شده دسترسی داریم یا خیر
+                            next_state_1 = self.transition_function[current_state_1][symbols]
+                            next_state_2 = self.transition_function[current_state_2][symbols]
+                            next_state = next_state_1 + next_state_2
+                            next_state_reverse = next_state_2 + next_state_1
+                            if (next_state in marked_pairs
+                                    or next_state_reverse in marked_pairs): # اگر توانستیم از استیت فعلی با یک حرفی از الفبا به یک استیت علامت گذاری شده بریم.
+                                marked_pairs.append(pair)# آنگاه آن استیت را علامتگذاری کن
+                                end += 1#برای اینکه بدانیم حداقل یک استیت را علامتگذاری کرده ایم . بنابرین باید حلقه وایل ادامه پیدا کند به ازای گام بعدی
+                                break
+                if (end == 0):#اگر هیج استیتی علامتگذاری نشده از حلقه وایل بیرون بپر
+                    break
+                step += 1
+        #print(marked_pairs)
+        unmarked_pairs = list(set(pairs) - set(marked_pairs))
+        if(len(unmarked_pairs)!=0):
+            #ساخت اتاماتا
+            minimized_states = []#استیت های آتاماتای مینیمایز شده ما
+            #در این حلقه ما سعی داریم استیت هایی که با همه ترکیبات ممکناشان علامتگذاری شده اند را بیابیم و سپس به صورت تک استیت در مجموعه استیت هایمان اد کنیم
+            # در مثال کتاب این دو استیت ۰ و ۹ هستند
+            for i in self.states:
+                for n in range(len(unmarked_pairs)):
+                    if (i in unmarked_pairs[n]):
+                        break
+                    if (n == (len(unmarked_pairs) - 1)):#وقتی به این ایف میرسیم یعنی به ازای هیچیک از استیت های علامتگذاری شده استیت مورد نظر ما وجود ندارد . یعنی به طور کامل علامتگذاری شدهه است
+                        minimized_states.append(i)
+            #print(unmarked_pairs)
+            unmarked_pairs.sort()#برای اینکه هربار با ترکیبات مختلفی از استیت های علامتگذاری نشده سروکار نداشته باشیم آنها سورت میکنیم
+            equal_states = {}#دیکشنری شامل کلید پارت اول ترکیب استیت ها و با مقدار استیت های معادل
+            #در نهایت به دیکشنری میرسیم که به ازای هر کلید در مقدار تمام استیت های معادل را داریم که آنها را میتوانیم یک استیت در نظر بگیریم
+            for pair in unmarked_pairs:
+                if (equal_states != {}):
+                    key = list(equal_states.keys())
+                    for n in range(len(key)):
+                        if (pair[0] in equal_states[key[n]]):
+                            equal_states[key[n]].add(pair[1])
+                            break
+                        if (n == (len(key) - 1)):
+                            equal_states.update({pair[0]: {pair[0], pair[1]}})
+                else:
+                    equal_states.update({pair[0]: {pair[0], pair[1]}})
+
+            for keys in equal_states.keys():
+                minimized_states.append(list(equal_states[keys]))#استیت های معادل به عنوان لیست به عنوان یک تک استیت شناخته میشود
+            #print(minimized_states)
+            #ساخت تابع انتقال
+            new_final_states = []
+            #یافتن استیت شروع و فاینال جدید
+            for states in minimized_states:
+                if (self.initial_state in states):#خانه ای از جدول (که میتواند لیست یا تک کاراکتر باشد) استیت شروع است که شامل استیت شروع باشد
+                    new_initial = states
+                for final in self.final_states:
+                    if (final in states):
+                        new_final_states.append(states)
+                        break
+
+            #تابع انتفال
+            new_transition_func = {}
+            for state in minimized_states:
+                new_value_dict = {}
+                for symbols in self.alphabet:
+                    simple_value = self.transition_function[state[0]][symbols]  #مقصد در حالتی که به استیت تنها به طور مستقیم از مبدا میرویم
+                    for destination in minimized_states:
+                        if (simple_value in destination):
+                            value_in_form = destination  #انتخاب کردن لیست شامل استیت مقصد به عنوان مقصد نهایی
+                    new_value_dict[symbols] = value_in_form
+                new_transition_func.update({str(state): new_value_dict})
+            #print(new_transition_func)
+            print(
+                "\n************This Is The Minimized DFA for Your Selected Language*************\nstates= %s\nalphabet= %s\ninitial state= %s\nfinal states= %s\ntransition function= %s"
+                % (minimized_states, self.alphabet, new_initial, new_final_states,
+                   new_transition_func))
+        else:
+            print('Your DFA is Also Minimized')
