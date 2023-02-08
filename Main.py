@@ -1,3 +1,4 @@
+#توجه . اسم استیت ها تک حرفی می باشد
 class DFA:
 
     def __init__(self, states, alphabet, initial_state, final_states,
@@ -47,7 +48,7 @@ class DFA:
         #هدف کلی اینست که تمام رشته های تا طول تعداد استیت را حساب کرده و چک کنیم که در زبان صدق میکنند یا خیر
         #اگر هیچ رشته ای در زبان صدق نکرد گوییم که زبان تهی است
         counter = 0
-        self.generator(len(self.states))
+        all_strings=self.generator(len(self.states))
         for _str in all_strings:
             if (self.isAccepted(_str)):
                 counter += 1
@@ -92,29 +93,37 @@ class DFA:
 
     def shortest_element(self):
         # از آنجایی که در آرایه اعضای زبان به ترتیب طول اضافه میشدند لذا کافیست اولین خانه ارایه را به عنوان کوتاه ترین طول برگردانیم
+        n=len(self.states)
         if (self.isInfinite()):
-            print("Language is infinite!")
+            all_strings_to_2n = self.generator(2 * n)
+            for _str in all_strings_to_2n:
+                if (self.isAccepted(_str)):
+                    return _str
+                    break
         else:
-            shortest = self.members_of_language()[0]
-            return (shortest)
+            if len(self.members_of_language())!=0:
+                shortest = self.members_of_language()[0]
+                return (shortest)
+            else:
+                return f"This Language Is Empty"
 
     def longest_element(self):
         if (self.isInfinite()):
             print("Language is infinite!")
         else:
-            length = self.number_of_members()
-            longest = self.members_of_language()[length - 1]
-            return (longest)
+            if len(self.members_of_language())!=0:
+                length = self.number_of_members()
+                longest = self.members_of_language()[length - 1]
+                return (longest)
+            else:
+                return f"This Language Is Empty"           
 
     def supplement_dfa(self):
         # میدانیم متمم زبان برابرست با همان آتاماتا با این تفاوت که جای استیت های عادی و پذیرش عوض میشود
-        if (self.isInfinite()):
-            print("Language is infinite!")
-        else:
-            new_final = list(set(self.states) - set(self.final_states))
-            L_supplement = DFA(self.states, self.alphabet, self.initial_state,
-                               new_final, self.transition_function)
-            return L_supplement
+        new_final = list(set(self.states) - set(self.final_states))
+        L_supplement = DFA(self.states, self.alphabet, self.initial_state,
+                            new_final, self.transition_function)
+        return L_supplement
 
     def op(self, L2):
         #ترکیب
@@ -196,6 +205,7 @@ class DFA:
             transition_function
         ]
         print('\n\nThis is the DFA for L1-L2 \n %s' % (subtraction_l1l2))
+        #زیرمجموعه گی ۱ از ۲
         if (len(subtract_L1L2_final_states) == 0):
             print('L1 is a subset of L2')
 
@@ -205,12 +215,17 @@ class DFA:
             transition_function
         ]
         print('\n\nThis is the DFA for L2-L1 \n %s' % (subtraction_l2l1))
+        #بر اساس تعریفات زیرمجموعه گی در مجموعه های زیر مجموعه ها را تعریف میکنیم
+        #اگر یک مجموعه زیر مجموعه دیگری باشد تفاضل آن از مجموعه مادر برابر صفر است
+        #در زبان ها هم اگر یکی زیر مجموعه دیگری باشد تفاضلشان دارای زبان خالی است یعنی فاینال استیت ندارد
+        #زیر مجموعه گی ۲ از ۱
         if (len(subtract_L2L1_final_states) == 0):
             print('L2 is a subset of L1')
-
+        #اگر هردو زیر مجموعه هم باشند آنگاه باهم برابرند
         if ((len(subtract_L1L2_final_states) == 0)
                 and (len(subtract_L2L1_final_states) == 0)):
             print('L1 and L2 are the Equals')
+        #اگر هیچکدام زیرمجموعه هم نباشند آنگاه جدا از هم اند
         if ((len(subtract_L1L2_final_states) != 0)
                 and (len(subtract_L2L1_final_states) != 0)):
             print('L1 and L2 are the Seperated')
@@ -256,19 +271,19 @@ class DFA:
                                 marked_pairs.append(pair)# آنگاه آن استیت را علامتگذاری کن
                                 end += 1#برای اینکه بدانیم حداقل یک استیت را علامتگذاری کرده ایم . بنابرین باید حلقه وایل ادامه پیدا کند به ازای گام بعدی
                                 break
-                if (end == 0):#اگر هیج استیتی علامتگذاری نشده از حلقه وایل بیرون بپر
-                    break
-                step += 1
+            if (end == 0):#اگر هیج استیتی علامتگذاری نشده از حلقه وایل بیرون بپر
+                break
+            step += 1
         #print(marked_pairs)
         unmarked_pairs = list(set(pairs) - set(marked_pairs))
-        if(len(unmarked_pairs)!=0):
+        if(len(unmarked_pairs)!=0):#زمانی باید مینیمایز کنیم که جفت علامت گذاری نشده داریم . اگر همه جفت ها علامت گذاری شده باشند یعنی آتاماتا مینیمایز است
             #ساخت اتاماتا
             minimized_states = []#استیت های آتاماتای مینیمایز شده ما
             #در این حلقه ما سعی داریم استیت هایی که با همه ترکیبات ممکناشان علامتگذاری شده اند را بیابیم و سپس به صورت تک استیت در مجموعه استیت هایمان اد کنیم
             # در مثال کتاب این دو استیت ۰ و ۹ هستند
             for i in self.states:
                 for n in range(len(unmarked_pairs)):
-                    if (i in unmarked_pairs[n]):
+                    if (i in unmarked_pairs[n]):#یعنی خانه خالی به ازای استیت مذکور داریم
                         break
                     if (n == (len(unmarked_pairs) - 1)):#وقتی به این ایف میرسیم یعنی به ازای هیچیک از استیت های علامتگذاری شده استیت مورد نظر ما وجود ندارد . یعنی به طور کامل علامتگذاری شدهه است
                         minimized_states.append(i)
@@ -276,18 +291,24 @@ class DFA:
             unmarked_pairs.sort()#برای اینکه هربار با ترکیبات مختلفی از استیت های علامتگذاری نشده سروکار نداشته باشیم آنها سورت میکنیم
             equal_states = {}#دیکشنری شامل کلید پارت اول ترکیب استیت ها و با مقدار استیت های معادل
             #در نهایت به دیکشنری میرسیم که به ازای هر کلید در مقدار تمام استیت های معادل را داریم که آنها را میتوانیم یک استیت در نظر بگیریم
+            #print(unmarked_pairs)
             for pair in unmarked_pairs:
                 if (equal_states != {}):
                     key = list(equal_states.keys())
+                    #print(key)
                     for n in range(len(key)):
+                        #print(equal_states[key[n]])
                         if (pair[0] in equal_states[key[n]]):
                             equal_states[key[n]].add(pair[1])
+                            #print(equal_states[key[n]])
                             break
                         if (n == (len(key) - 1)):
                             equal_states.update({pair[0]: {pair[0], pair[1]}})
                 else:
                     equal_states.update({pair[0]: {pair[0], pair[1]}})
-
+                    #print(equal_states)
+            #print(equal_states)
+            #در این حلقه استیت های معادل را اد میکنیم به مجموعه استیت مینیمایزمان
             for keys in equal_states.keys():
                 minimized_states.append(list(equal_states[keys]))#استیت های معادل به عنوان لیست به عنوان یک تک استیت شناخته میشود
             #print(minimized_states)
@@ -507,6 +528,7 @@ L = DFA(
             '1': 'q1'
         }
     })
+#زبان ال ۲ فقط تک عضوی ۱ را میذرد
 L2 = DFA(
     [
         'q0',
@@ -526,6 +548,7 @@ L2 = DFA(
             '1': 'q2'
         }
     })
+#رشته های ۱ به طول ۲ و ۳ و ۴ را میپذیرد
 L3 = DFA(
     ['q0', 'q1', 'q2', 'q3', 'q4', 'q5'], ['0', '1'], 'q0', ['q2', 'q3', 'q4'],
     {
@@ -542,8 +565,8 @@ L3 = DFA(
             '1': 'q3'
         },
         'q3': {
-            '0': 'q4',
-            '1': 'q5'
+            '1': 'q4',
+            '0': 'q5'
         },
         'q4': {
             '0': 'q5',
@@ -554,16 +577,17 @@ L3 = DFA(
             '1': 'q5'
         }
     })
-#L.isAccepted('10')
+#print(L.isAccepted('101'))
 #print(L.generator(4))
 #L.isEmpty()
-#L.isInfinite()
+#print(L.isInfinite())
 #print(L3.members_of_language())
-#print(L2.number_of_members())
+#print(L3.number_of_members())
 #print(L2.isInfinite())
 #print(L3.shortest_element())
-#print(L3.longest_element())
+#print(L.longest_element())
 #print(L3.supplement_dfa())
+#print(L3.supplement_dfa().isInfinite())
 #phase2
 L11 = DFA(
     [
